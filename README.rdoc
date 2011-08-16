@@ -1,0 +1,68 @@
+= Sunspot Submodel Index
+
+This gem ties into the Rails model lifecycle to add support for calling Sunspot index on another model when data it relies on for its index is from an associated model.
+
+== Example
+Lets say you have two ActiveRecord models.  A Person model and a Company model.  As part of your Sunspot indexing for a Person you include the Company name associated with that Person.  When the Company name changes you need to be able to automatically reindex the Person model.  Or if the Company is destroyed you need to be able to reindex the Person with a blank Company name.  This can be easily done with the sunspot_submodel_index declaration in Company to tell it to notify the Person model.
+
+  class Person < ActiveRecord::Base
+    belongs_to :company
+
+    searchable  do
+      textgen :contact_name, :using => :name, :stored => true
+      textgen(:contact_company_name, :stored => true) { self.company_id ? company.name : '' }
+    end
+  end
+  
+  class Company < ActiveRecord::Base
+    has_many :people
+    sunspot_submodel_index :parent => :people, :included_attributes => [:name]
+  end
+  
+Notice that in this example people is a has_many association.  That means all people associated with the company will be reindexed.  
+
+== Usage
+
+This gem ties into the Rails ActiveRecord lifecycle and ties into save and destroy events.  You add the sunspot_submodel_index declaration to the model that needs to notify another model when it is saved or destroyed.  The simplest declaration is:
+
+  sunspot_submodel_index :parent => :some_parent
+  
+In this example the class instance must respond to some_parent.  The parent object will then need to respond to solr_index.
+
+=== Enumerable parents
+
+If the parent is an Enumerable type then it will be iterated over and each member will be reindexed.  
+
+=== Included and Ignored Attributes
+
+You often will only need to notify the parent model if some subset of the attributes on the object have changed.  You can declare attributes to include or ignore.  For included attributes if any attribute in the include set has changed on the object the parent will get indexed.  For ignored attributes the parent will only get indexed if attributes other then those in the ignore set were changed.  If you declare both included and ignored attribute options only the included option is used.
+
+Examples
+
+  sunspot_submodel_index :parent => :people, :included_attributes => [:name]
+  
+  sunspot_submodel_index :parent => :people, :ignore_attributes => [:industry, :address]
+
+=== If Option
+
+There is also the option to call a Proc before parent is indexed.  The Proc is passed the instance of the object.  If the Proc returns false the parent is not indexed.  
+
+Example
+
+  sunspot_submodel_index :parent => :people, :if => Proc.new {|obj| !obj.subsidiary? }
+
+=== Force association reload
+
+Sometimes you will want to force a reload on the association of the parent model before you call it to reindex.  You can set this option with force_association_reload.  If this option is set parent will be called with the parameter true before solr_index is called.
+
+Example
+
+  sunspot_submodel_index :parent => :people, :force_association_reload => true
+
+== Dependencies
+1. Sunspot
+2. ActiveRecord 2+
+
+== License
+
+Sunspot is distributed under the MIT License, copyright (c) 2011 Finetooth Enterprises, Inc.
