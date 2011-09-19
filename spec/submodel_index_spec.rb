@@ -2,6 +2,7 @@ require File.expand_path('../spec_helper', __FILE__)
 
 def stub_object_no_index(new_record = false)
   obj = SunspotSubmodelTestModel.new
+  obj.class._sunspot_submodel_options[:if] = nil
   obj.class._sunspot_submodel_options[:included_attributes] = false
   obj.class._sunspot_submodel_options[:ignored_attributes] = false
   obj.stubs(:new_record?).returns(new_record)
@@ -28,6 +29,7 @@ end
 
 def stub_object_will_index(new_record = false)
   obj = SunspotSubmodelTestModel.new
+  obj.class._sunspot_submodel_options[:if] = nil
   obj.class._sunspot_submodel_options[:included_attributes] = false
   obj.class._sunspot_submodel_options[:ignored_attributes] = false
   obj.stubs(:new_record?).returns(new_record)
@@ -151,8 +153,17 @@ describe Sunspot::SubmodelIndex do
        obj = stub_object_will_index
        obj.destroy
      end
+     it "should not call parents index if the if proc fails" do
+       obj = stub_object_no_index
+       obj.expects(:check_parent_solr_if_statement).returns false
+       obj.destroy
+     end
+     it "should call parents index if the if proc is ok" do
+       obj = stub_object_will_index
+       obj.expects(:check_parent_solr_if_statement).returns true
+       obj.destroy
+     end
    end
-   
    
    context "force association reload" do
      it "should call parent with true with option is set" do

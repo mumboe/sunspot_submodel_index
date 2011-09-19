@@ -97,6 +97,7 @@ module Sunspot
       
       #always call reindex on destroy
       def parent_solr_index_on_destroy
+        return unless check_parent_solr_if_statement
         call_parent_solr_index
       end
 

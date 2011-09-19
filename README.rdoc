@@ -45,7 +45,7 @@ Examples
 
 === If Option
 
-There is also the option to call a Proc before parent is indexed.  The Proc is passed the instance of the object.  If the Proc returns false the parent is not indexed.  
+There is also the option to call a Proc before parent is indexed.  The Proc is passed the instance of the object.  If the Proc returns false the parent is not indexed. Note, that since the Proc is called on destroy of the object you should write to code to ensure it will not throw and exception in that case.  
 
 Example
 
